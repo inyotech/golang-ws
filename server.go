@@ -48,8 +48,8 @@ func writeHandler(frameWriter *wsio.FrameWriter, ch <-chan *wsio.Frame) {
 
 func wsHandler(conn net.Conn) {
 
-	readerChannel := make(chan *wsio.Frame, 1)
-	writerChannel := make(chan *wsio.Frame, 1)
+	wsioReaderChannel := make(chan *wsio.Frame, 1)
+	wsioWriterChannel := make(chan *wsio.Frame, 1)
 
 	readerWriter := bufio.NewReadWriter(
 		bufio.NewReader(conn),
@@ -78,14 +78,14 @@ func wsHandler(conn net.Conn) {
 
 	readerWriter.Writer.Flush()
 
-	go readHandler(frameReader, readerChannel)
+	go readHandler(frameReader, wsioReaderChannel)
 
-	go writeHandler(frameWriter, writerChannel)
+	go writeHandler(frameWriter, wsioWriterChannel)
 
 	for {
-		frame, more := <-readerChannel
+		frame, more := <-wsioReaderChannel
 		if !more {
-			close(writerChannel)
+			fmt.Println("wsioChannel close")
 			return
 		}
 
@@ -93,16 +93,17 @@ func wsHandler(conn net.Conn) {
 		case 1, 2:
 			fmt.Println("echoing frame")
 			frame.Mask = []byte{}
-			writerChannel<-frame
+			wsioWriterChannel<-frame
 		case 8:
-			fmt.Println("got connection close", frame.Payload)
+			fmt.Println("got connection close")
 			code, message, err := wsio.ParseCloseFrame(frame)
 			if err != nil {
 				panic(err)
 			}
 			fmt.Println("close frame", code, message)
 			frame.Mask = []byte{}
-			writerChannel<-frame
+			wsioWriterChannel<-frame
+			close(wsioWriterChannel)
 			conn.Close()
 		case 9:
 			fmt.Println("got ping")
