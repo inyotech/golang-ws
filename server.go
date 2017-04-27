@@ -2,21 +2,19 @@ package main
 
 import (
 	"fmt"
-        "bufio"
-	"net"
 	"net/http"
 	"html/template"
 	"inyotech/ws/wsio"
 
 )
 
-func httpHandler(w http.ResponseWriter, r *http.Request) {
+func httpHandler(response http.ResponseWriter, request *http.Request) {
 	t, err := template.ParseFiles("www/index.html")
 	if err != nil {
 		panic(err)
 	}
 
-	t.Execute(w, nil)
+	t.Execute(response, nil)
 }
 
 func readHandler(frameReader *wsio.FrameReader, ch chan<- *wsio.Frame) {
@@ -47,22 +45,19 @@ func writeHandler(frameWriter *wsio.FrameWriter, ch <-chan *wsio.Frame) {
 	}
 }
 
-func wsHandler(conn net.Conn) {
+func wsHandler(w http.ResponseWriter, request *http.Request) {
 
-	defer conn.Close()
+	fmt.Println("wsHandler")
 
-	readerWriter := bufio.NewReadWriter(
-		bufio.NewReader(conn),
-		bufio.NewWriter(conn),
-	)
-
-	frameReader := wsio.NewFrameReader(readerWriter.Reader)
-	frameWriter := wsio.NewFrameWriter(readerWriter.Writer)
-
-	request, err := http.ReadRequest(readerWriter.Reader)
+	conn, readerWriter, err := w.(http.Hijacker).Hijack()
 	if err != nil {
 		panic(err)
 	}
+
+	defer conn.Close()
+
+	frameReader := wsio.NewFrameReader(readerWriter.Reader)
+	frameWriter := wsio.NewFrameWriter(readerWriter.Writer)
 
 	handshakeData, err := wsio.DoHandshake(request)
 	if err != nil {
@@ -118,21 +113,7 @@ func wsHandler(conn net.Conn) {
 
 func main() {
 
-	go func() {
-		listener, err := net.Listen("tcp", ":8081")
-		if err != nil {
-			panic(err)
-		}
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				panic(err)
-			}
-			go wsHandler(conn)
-		}
-
-	}()
-
+	http.HandleFunc("/service", wsHandler)
 	http.HandleFunc("/", httpHandler)
 	http.ListenAndServe(":8080", nil)
 

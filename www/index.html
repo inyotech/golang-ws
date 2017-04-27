@@ -8,7 +8,7 @@
     <ul id="messages">
     </ul>
     <script>
-      var ws = new WebSocket("ws://localhost:8081/service?var=xyz");
+      var ws = new WebSocket("ws://localhost:8080/service");
       ws.onopen = function(event) {
           this.send("This is a test message.");
       };
