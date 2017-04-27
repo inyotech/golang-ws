@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Test</title>
+  </head>
+  <body>
+    <h1>It's working.</h1>
+    <ul id="messages">
+    </ul>
+    <script>
+      var ws = new WebSocket("ws://localhost:8081/service?var=xyz");
+      ws.onopen = function(event) {
+          this.send("This is a test message.");
+      };
+      ws.onmessage = function(event) {
+          console.log(event.data)
+      };
+    </script>
+  </body>
+</html>
