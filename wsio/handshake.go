@@ -39,13 +39,13 @@ func DoHandshake(request *http.Request) (*HandshakeData, error) {
 	}
 
 	request.Header.Del("Upgrade")
-	
+
 	if header, ok := request.Header["Connection"]; !(ok && stringContainedInList("Upgrade", header)) {
 		return nil, errors.New("No Connection: Upgrade header found")
 	}
 
 	request.Header.Del("Connection")
-	
+
 	var websocketKey string
 	if websocketKey = request.Header.Get("Sec-Websocket-Key"); len(websocketKey) == 0 {
 		return nil, errors.New("No Sec-Websocket-Key found")
@@ -61,14 +61,14 @@ func DoHandshake(request *http.Request) (*HandshakeData, error) {
 	}
 
 	request.Header.Del("Sec-Websocket-Key")
-	
+
 	var websocketVersionString string
 	if websocketVersionString = request.Header.Get("Sec-Websocket-Version"); len(websocketVersionString) == 0 {
 		return nil, errors.New("No Sec-Websocket-Version found")
 	}
 
 	supportedWebsocketVersions := []int{13}
-	
+
 	websocketVersion, err := strconv.Atoi(websocketVersionString)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to parse Sec-Websocket-Version value %s", websocketVersionString))
@@ -79,7 +79,7 @@ func DoHandshake(request *http.Request) (*HandshakeData, error) {
 	}
 
 	request.Header.Del("Sec-Websocket-Version")
-	
+
 	originHeader := request.Header.Get("Origin")
 
 	request.Header.Del("Origin")
@@ -113,14 +113,14 @@ func DoHandshake(request *http.Request) (*HandshakeData, error) {
 }
 
 func FormHandshakeResponse(data *HandshakeData) *http.Response {
-	
+
 	acceptHeaders := http.Header{}
 
 	acceptHeaders.Add("Upgrade", "websocket")
 	acceptHeaders.Add("Connection", "Upgrade")
 	acceptHeaders.Add("Sec-Websocket-Accept", data.acceptKey)
 	acceptHeaders.Add("Sec-Websocket-Version", fmt.Sprintf("%d", data.acceptVersion))
-	
+
 	if data.acceptSubprotocol != "" {
 		acceptHeaders.Add("Sec-Websocket-Protocol", data.acceptSubprotocol)
 	}
@@ -146,7 +146,7 @@ func generateAcceptKey(key string) string {
 	keySuffix := "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 	checksum := sha1.Sum([]byte(key + keySuffix))
-	
+
 	return base64.StdEncoding.EncodeToString(checksum[:])
 }
 
@@ -171,7 +171,7 @@ func intContainedInList(i int, l []int) bool {
 func parseSubprotocolHeaders(subprotocolHeaders []string) []string {
 
 	var subprotocols []string
-	
+
 	for _, protocolStrings := range subprotocolHeaders {
 		for _, protocolString := range strings.Split(protocolStrings, ",") {
 			subprotocols = append(subprotocols, strings.TrimSpace(protocolString))
@@ -182,9 +182,9 @@ func parseSubprotocolHeaders(subprotocolHeaders []string) []string {
 }
 
 func parseExtensionHeaders(extensionHeaders []string) []string {
-	
+
 	var extensions []string
-	
+
 	for _, extensionStrings := range extensionHeaders {
 		for _, extensionString := range strings.Split(extensionStrings, ",") {
 			value := strings.TrimSpace(extensionString)
@@ -196,4 +196,3 @@ func parseExtensionHeaders(extensionHeaders []string) []string {
 	}
 	return extensions
 }
-
