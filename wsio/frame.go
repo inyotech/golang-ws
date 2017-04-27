@@ -8,33 +8,47 @@ import (
 	"errors"
 )
 
+type FrameType byte
+
+const (
+	ContinuationFrame	= 0
+	TextFrame		= 1
+	BinaryFrame		= 2
+	CloseFrame		= 8
+	PingFrame               = 9
+	PongFrame               = 10
+)
+
 type Frame struct {
-	Fin  bool
-	Rsv1 bool
-	Rsv2 bool
-	Rsv3 bool
-	Opcode byte
-	Mask []byte
+	Type FrameType
+	Mask bool
 	Payload []byte
+
+	fin  bool
+	rsv1 bool
+	rsv2 bool
+	rsv3 bool
+
+	mask []byte
 }
 
 type FrameReader struct {
-	reader * bufio.Reader
+	* bufio.Reader
 }
 
 type FrameWriter struct {
-	writer * bufio.Writer
+	* bufio.Writer
 }
 
-func NewFrameReader(r * bufio.Reader) * FrameReader {
+func NewFrameReader(reader * bufio.Reader) * FrameReader {
 	return &FrameReader{
-		reader: r,
+		Reader: reader,
 	}
 }
 
-func NewFrameWriter(w * bufio.Writer) * FrameWriter {
+func NewFrameWriter(writer * bufio.Writer) * FrameWriter {
 	return &FrameWriter{
-		writer: w,
+		Writer: writer,
 	}
 }
 
@@ -42,37 +56,38 @@ func (reader * FrameReader) ReadFrame() (*Frame, error) {
 
 	frame := &Frame{}
 
-	b, err := reader.reader.ReadByte()
+	b, err := reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
 
-	frame.Fin    = (b & 0x80) >> 7 == 1
-	frame.Rsv1   = (b & 0x40) >> 6 == 1
-	frame.Rsv2   = (b & 0x20) >> 5 == 1
-	frame.Rsv3   = (b & 0x10) >> 4 == 1
-	frame.Opcode = b & 0x0f
+	frame.fin    = (b & 0x80) >> 7 == 1
+	frame.rsv1   = (b & 0x40) >> 6 == 1
+	frame.rsv2   = (b & 0x20) >> 5 == 1
+	frame.rsv3   = (b & 0x10) >> 4 == 1
+	frame.Type   = FrameType(b & 0x0f)
 
-	b, err = reader.reader.ReadByte()
+	b, err = reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
 
-	hasMask := (b & 0x80) >> 7 == 1
+	frame.Mask = (b & 0x80) >> 7 == 1
+
 	length  := b & 0x7f
 
 	var payloadLength uint64
 	switch(length) {
 	case 126:
 		var length uint16
-		err := binary.Read(reader.reader, binary.BigEndian, &length)
+		err := binary.Read(reader, binary.BigEndian, &length)
 		if err != nil {
 			return nil, err
 		}
 		payloadLength = uint64(length)
 	case 127:
 		var length uint64
-		err := binary.Read(reader.reader, binary.BigEndian, &length)
+		err := binary.Read(reader, binary.BigEndian, &length)
 		if err != nil {
 			return nil, err
 		}
@@ -81,23 +96,23 @@ func (reader * FrameReader) ReadFrame() (*Frame, error) {
 		payloadLength = uint64(length)
 	}
 
-	if hasMask {
-		frame.Mask = make([]byte, 4)
-		_, err := io.ReadFull(reader.reader, frame.Mask)
+	if frame.Mask {
+		frame.mask = make([]byte, 4)
+		_, err := io.ReadFull(reader, frame.mask)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	frame.Payload = make([]byte, payloadLength)
-	_, err = io.ReadFull(reader.reader, frame.Payload)
+	_, err = io.ReadFull(reader, frame.Payload)
 	if err != nil {
 		return nil, err
 	}
 
-	if hasMask {
+	if frame.Mask {
 		for i := uint64(0); i<payloadLength; i++ {
-			frame.Payload[i] = frame.Payload[i] ^ frame.Mask[i % 4]
+			frame.Payload[i] = frame.Payload[i] ^ frame.mask[i % 4]
 		}
 	}
 
@@ -108,14 +123,14 @@ func (writer * FrameWriter) WriteFrame(frame *Frame) error {
 
 	var b byte
 
-	if frame.Fin  { b |= 0x80 }
-	if frame.Rsv1 { b |= 0x40 }
-	if frame.Rsv2 { b |= 0x20 }
-	if frame.Rsv3 { b |= 0x10 }
+	if frame.fin  { b |= 0x80 }
+	if frame.rsv1 { b |= 0x40 }
+	if frame.rsv2 { b |= 0x20 }
+	if frame.rsv3 { b |= 0x10 }
 
-	b |= frame.Opcode & 0x0f
+	b |= byte(frame.Type & 0x0f)
 
-	err := writer.writer.WriteByte(b)
+	err := writer.WriteByte(b)
 	if err != nil {
 		return err
 	}
@@ -123,7 +138,7 @@ func (writer * FrameWriter) WriteFrame(frame *Frame) error {
 	b = 0
 	var length byte
 
-	if len(frame.Mask) > 0 {
+	if frame.Mask {
 		length = 0x80
 	}
 
@@ -132,18 +147,18 @@ func (writer * FrameWriter) WriteFrame(frame *Frame) error {
 	switch {
 	case payloadLength < 126:
 		length |= byte(payloadLength) & 0x7f
-		writer.writer.WriteByte(length)
+		writer.WriteByte(length)
 	case payloadLength < 2^16 + 1:
 		length |= 126
-		writer.writer.WriteByte(length)
-		err := binary.Write(writer.writer, binary.BigEndian, uint16(payloadLength))
+		writer.WriteByte(length)
+		err := binary.Write(writer, binary.BigEndian, uint16(payloadLength))
 		if err != nil {
 			panic(err)
 		}
 	case payloadLength < 2^63:
 		length |= 127
-		writer.writer.WriteByte(length)
-		err := binary.Write(writer.writer, binary.BigEndian, payloadLength)
+		writer.WriteByte(length)
+		err := binary.Write(writer, binary.BigEndian, payloadLength)
 		if err != nil {
 			panic(err)
 		}
@@ -152,32 +167,32 @@ func (writer * FrameWriter) WriteFrame(frame *Frame) error {
 		panic(errors.New(fmt.Sprintf("frame length %d too large", payloadLength)))
 	}
 
-	if len(frame.Mask) > 0 {
-		_, err := writer.writer.Write(frame.Mask)
+	if frame.Mask {
+		_, err := writer.Write(frame.mask)
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = writer.writer.Write(frame.Payload)
+	_, err = writer.Write(frame.Payload)
 	if err != nil {
 		return err
 	}
 
-	writer.writer.Flush()
+	writer.Flush()
 
 	return nil
 }
 
 func ParseCloseFrame(frame *Frame) (code uint16, message string, err error) {
 
-	if frame.Opcode != 8 {
+	if frame.Type != CloseFrame {
 		err = errors.New("not a close frame")
 		return
 	}
 
 	if len(frame.Payload) == 1 {
-		err = errors.New("invalid paylaoad size, expecting 16 bit code")
+		err = errors.New("invalid paylaoad size, expecting 16 bit code or nothing")
 		return
 	}
 

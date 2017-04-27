@@ -21,11 +21,12 @@ func httpHandler(w http.ResponseWriter, r *http.Request) {
 
 func readHandler(frameReader *wsio.FrameReader, ch chan<- *wsio.Frame) {
 
+	defer close(ch)
+
 	for {
 		frame, err := frameReader.ReadFrame()
 		if err != nil {
-			close(ch)
-			return
+			break
 		}
 		ch<-frame
 	}
@@ -48,8 +49,7 @@ func writeHandler(frameWriter *wsio.FrameWriter, ch <-chan *wsio.Frame) {
 
 func wsHandler(conn net.Conn) {
 
-	wsioReaderChannel := make(chan *wsio.Frame, 1)
-	wsioWriterChannel := make(chan *wsio.Frame, 1)
+	defer conn.Close()
 
 	readerWriter := bufio.NewReadWriter(
 		bufio.NewReader(conn),
@@ -78,39 +78,39 @@ func wsHandler(conn net.Conn) {
 
 	readerWriter.Writer.Flush()
 
-	go readHandler(frameReader, wsioReaderChannel)
+	frameReaderChannel := make(chan *wsio.Frame)
+	frameWriterChannel := make(chan *wsio.Frame)
 
-	go writeHandler(frameWriter, wsioWriterChannel)
+	go readHandler(frameReader, frameReaderChannel)
+	go writeHandler(frameWriter, frameWriterChannel)
 
 	for {
-		frame, more := <-wsioReaderChannel
+		frame, more := <-frameReaderChannel
 		if !more {
-			fmt.Println("wsioChannel close")
 			return
 		}
 
-		switch(frame.Opcode) {
-		case 1, 2:
-			fmt.Println("echoing frame")
-			frame.Mask = []byte{}
-			wsioWriterChannel<-frame
-		case 8:
-			fmt.Println("got connection close")
+		switch(frame.Type) {
+		case wsio.TextFrame, wsio.BinaryFrame:
+			frame.Mask = false
+			fmt.Println(frame)
+			frameWriterChannel<-frame
+		case wsio.CloseFrame:
 			code, message, err := wsio.ParseCloseFrame(frame)
 			if err != nil {
 				panic(err)
 			}
 			fmt.Println("close frame", code, message)
-			frame.Mask = []byte{}
-			wsioWriterChannel<-frame
-			close(wsioWriterChannel)
-			conn.Close()
-		case 9:
+			frame.Mask = false
+			frameWriterChannel<-frame
+			close(frameWriterChannel)
+			return
+		case wsio.PingFrame:
 			fmt.Println("got ping")
-		case 10:
+		case wsio.PongFrame:
 			fmt.Println("got pong")
 		default:
-			fmt.Println("unhandled frame type", frame.Opcode)
+			fmt.Println("unhandled frame type", frame.Type)
 		}
 	}
 
