@@ -40,6 +40,11 @@ type FrameWriter struct {
 	* bufio.Writer
 }
 
+type FrameReadWriter struct {
+	* FrameReader
+	* FrameWriter
+}
+
 func NewFrameReader(reader * bufio.Reader) * FrameReader {
 	return &FrameReader{
 		Reader: reader,
@@ -49,6 +54,13 @@ func NewFrameReader(reader * bufio.Reader) * FrameReader {
 func NewFrameWriter(writer * bufio.Writer) * FrameWriter {
 	return &FrameWriter{
 		Writer: writer,
+	}
+}
+
+func NewFrameReadWriter(readWriter * bufio.ReadWriter) * FrameReadWriter {
+	return &FrameReadWriter{
+		FrameReader: NewFrameReader(readWriter.Reader),
+		FrameWriter: NewFrameWriter(readWriter.Writer),
 	}
 }
 
