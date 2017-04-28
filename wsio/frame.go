@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"bufio"
+	"math/rand"
 	"encoding/binary"
 	"errors"
 )
@@ -225,9 +226,17 @@ func (writer * FrameWriter) WriteFrame(frame *Frame) error {
 	}
 
 	if frame.Mask {
+		mask := make([]byte, 4)
+		rand.Read(mask)
+		frame.mask = mask
+
 		_, err := writer.Write(frame.mask)
 		if err != nil {
 			return err
+		}
+
+		for i:=uint64(0); i<payloadLength; i++ {
+			frame.Payload[i] = frame.Payload[i] ^ frame.mask[i % 4]
 		}
 	}
 
