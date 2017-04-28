@@ -1,4 +1,4 @@
-package wsio
+package ws
 
 import (
 	"fmt"

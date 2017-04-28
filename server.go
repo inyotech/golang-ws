@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"html/template"
 	"time"
-	"github.com/inyotech/golang-ws/wsio"
+	"github.com/inyotech/golang-ws/ws"
 
 )
 
@@ -18,7 +18,7 @@ func httpHandler(response http.ResponseWriter, request *http.Request) {
 	t.Execute(response, nil)
 }
 
-func handlews1(ch chan *wsio.Frame) {
+func handlews1(ch chan *ws.Frame) {
 
 	for {
 		frame, ws_ok := <-ch
@@ -32,7 +32,7 @@ func handlews1(ch chan *wsio.Frame) {
 	}
 }
 
-func handlews2(ch chan *wsio.Frame) {
+func handlews2(ch chan *ws.Frame) {
 
 	for i:=0;i<10;i++ {
 		select {
@@ -43,7 +43,7 @@ func handlews2(ch chan *wsio.Frame) {
 			}
 			fmt.Println(string(frame.Payload))
 		case <-time.After(time.Second):
-			frame := wsio.NewTextFrame("message from handlerws2")
+			frame := ws.NewTextFrame("message from handlerws2")
 			fmt.Println(string(frame.Payload))
 			ch<-frame
 		}
@@ -54,8 +54,8 @@ func handlews2(ch chan *wsio.Frame) {
 
 func main() {
 
-	http.Handle("/service1", wsio.WsHandlerFunc(handlews1))
-	http.Handle("/service2", wsio.WsHandlerFunc(handlews2))
+	http.Handle("/service1", ws.WsHandlerFunc(handlews1))
+	http.Handle("/service2", ws.WsHandlerFunc(handlews2))
 	http.HandleFunc("/", httpHandler)
 	http.ListenAndServe(":8080", nil)
 

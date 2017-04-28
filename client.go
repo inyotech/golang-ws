@@ -11,7 +11,7 @@ import (
 	"encoding/base64"
 	"crypto/sha1"
 	
-	"github.com/inyotech/golang-ws/wsio"
+	"github.com/inyotech/golang-ws/ws"
 )
 
 func main() {
@@ -84,12 +84,12 @@ func main() {
 
 	fmt.Println("starting websocket")
 
-	frame := wsio.NewTextFrame("Test message")
+	frame := ws.NewTextFrame("Test message")
 	frame.Mask = true
 	
 	fmt.Println("writing frame", frame, string(frame.Payload))
 	
-	frameReadWriter := wsio.NewFrameReadWriter(readWriter)
+	frameReadWriter := ws.NewFrameReadWriter(readWriter)
 
 	err = frameReadWriter.WriteFrame(frame)
 	if err != nil {
@@ -103,8 +103,8 @@ func main() {
 		panic(err)
 	}
 
-	if frame.Type == wsio.CloseFrame {
-		fmt.Println(wsio.ParseCloseFrame(frame))
+	if frame.Type == ws.CloseFrame {
+		fmt.Println(ws.ParseCloseFrame(frame))
 	}
 
 	fmt.Println("recevied frame", frame, string(frame.Payload))
