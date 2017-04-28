@@ -48,12 +48,34 @@ func NewBinaryFrame(b []byte) *Frame {
 	}
 }
 
-func newControlFrame(t FrameType)  *Frame {
+func newCloseFrame(code uint16, message string)  *Frame {
+	data := make([]byte, 2)
+	binary.BigEndian.PutUint16(data, code)
+	data = append(data, []byte(message)...)
+
 	return &Frame{
-		Type: t,
+		Type: CloseFrame,
+		Payload: data,
 		fin: true,
 	}
 }
+
+func newPingFrame(data []byte) *Frame {
+	return &Frame{
+		Type: PingFrame,
+	        Payload: data,
+		fin: true,
+	}
+}
+
+func newPongFrame(data []byte) *Frame {
+	return &Frame{
+		Type: PongFrame,
+	        Payload: data,
+		fin: true,
+	}
+}
+
 
 type FrameReader struct {
 	* bufio.Reader

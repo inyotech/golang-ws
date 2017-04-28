@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"html/template"
 	"time"
-	"inyotech/ws/wsio"
+	"github.com/inyotech/golang-ws/wsio"
 
 )
 
@@ -18,57 +18,44 @@ func httpHandler(response http.ResponseWriter, request *http.Request) {
 	t.Execute(response, nil)
 }
 
-type wshandlerfunc func(chan *wsio.Frame)
-
-func handlews1(c chan *wsio.Frame) {
+func handlews1(ch chan *wsio.Frame) {
 
 	for {
-		frame, ws_ok := <-c
+		frame, ws_ok := <-ch
 		if !ws_ok {
-			fmt.Println("handlews1 closed")
+			fmt.Println("handlews1 channel closed")
 			return
 		}
-		fmt.Println("handlews1", string(frame.Payload))
+		fmt.Println(string(frame.Payload))
 		frame.Payload = append([]byte("handlews1 "), frame.Payload...)
-		c<-frame
+		ch<-frame
 	}
 }
 
-func handlews2(c chan *wsio.Frame) {
+func handlews2(ch chan *wsio.Frame) {
 
-	for i:=0;i<3;i++ {
+	for i:=0;i<10;i++ {
 		select {
-		case <-c:
-		default:
+		case frame, ws_ok := <-ch:
+			if !ws_ok {
+				fmt.Println("handlews2 channel closed")
+				return
+			}
+			fmt.Println(string(frame.Payload))
+		case <-time.After(time.Second):
+			frame := wsio.NewTextFrame("message from handlerws2")
+			fmt.Println(string(frame.Payload))
+			ch<-frame
 		}
-		frame := wsio.NewTextFrame("message from handlerws2")
-		c<-frame
-		time.Sleep(time.Second)
-		fmt.Println("after sleep")
 	}
-	fmt.Println("closing ws2")
-	close(c)
+	close(ch)
 }
 
-func (clientFunc wshandlerfunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Println("wsHandler")
-
-	conn, frameReadWriter, err := wsio.SetupConnection(w, r)
-	if err != nil {
-		panic(err)
-	}
-
-	defer conn.Close()
-
-	wsio.DispatchFrames(clientFunc, frameReadWriter)
-
-}
 
 func main() {
 
-	http.Handle("/service1", wshandlerfunc(handlews1))
-	http.Handle("/service2", wshandlerfunc(handlews2))
+	http.Handle("/service1", wsio.WsHandlerFunc(handlews1))
+	http.Handle("/service2", wsio.WsHandlerFunc(handlews2))
 	http.HandleFunc("/", httpHandler)
 	http.ListenAndServe(":8080", nil)
 
