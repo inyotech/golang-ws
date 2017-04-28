@@ -32,6 +32,29 @@ type Frame struct {
 	mask []byte
 }
 
+func NewTextFrame(s string) *Frame {
+	return &Frame{
+		Type: TextFrame,
+		Payload: []byte(s),
+		fin: true,
+	}
+}
+
+func NewBinaryFrame(b []byte) *Frame {
+	return &Frame{
+		Type: BinaryFrame,
+		Payload: b,
+		fin: true,
+	}
+}
+
+func newControlFrame(t FrameType)  *Frame {
+	return &Frame{
+		Type: t,
+		fin: true,
+	}
+}
+
 type FrameReader struct {
 	* bufio.Reader
 }

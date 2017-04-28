@@ -8,13 +8,28 @@
     <ul id="messages">
     </ul>
     <script>
-      var ws = new WebSocket("ws://localhost:8080/service");
-      ws.onopen = function(event) {
-          this.send("This is a test message.");
+      var ws1 = new WebSocket("ws://localhost:8080/service1");
+      ws1.onopen = function(event) {
+          this.send("ws1 test message.");
       };
-      ws.onmessage = function(event) {
+      ws1.onmessage = function(event) {
           console.log(event.data)
       };
-    </script>
+      ws1.onclose = function(event) {
+          console.log("ws1 closed")
+      };
+
+      var ws2 = new WebSocket("ws://localhost:8080/service2");
+      ws2.onopen = function(event) {
+          this.send("ws2 test message.");
+      };
+      ws2.onmessage = function(event) {
+          console.log(event.data)
+      };
+      ws2.onclose = function(event) {
+          console.log("ws2 closed");
+      }
+
+</script>
   </body>
 </html>
