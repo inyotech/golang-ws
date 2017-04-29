@@ -49,7 +49,7 @@ func NewBinaryFrame(b []byte) *Frame {
 	}
 }
 
-func newCloseFrame(code uint16, message string)  *Frame {
+func NewCloseFrame(code uint16, message string)  *Frame {
 	data := make([]byte, 2)
 	binary.BigEndian.PutUint16(data, code)
 	data = append(data, []byte(message)...)

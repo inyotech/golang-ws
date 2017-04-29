@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"bufio"
+	"strings"
 	"time"
 	"net"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 	"math/rand"
 	"encoding/base64"
 	"crypto/sha1"
-	
+
 	"github.com/inyotech/golang-ws/ws"
 )
 
@@ -20,7 +21,7 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	conn, err := net.Dial("tcp", "echo.websocket.org:80")
+	conn, err := net.Dial("tcp", "localhost:9000")
 	if err != nil {
 		panic(err)
 	}
@@ -31,24 +32,24 @@ func main() {
 	)
 
 	headers := http.Header{}
-	headers.Add("Host", "echo.websocket.org")
+	headers.Add("Host", "127.0.0.1:9000")
 	headers.Add("Upgrade", "websocket")
 	headers.Add("Connection", "Upgrade")
-	headers.Add("Origin", "http://www.websocket.org")
-	
+	headers.Add("Origin", "http://localhost")
+
 	data := make([]byte, 16)
 	rand.Read(data)
 	requestKey := base64.StdEncoding.EncodeToString(data)
-	
+
 	headers.Add("Sec-Websocket-Key", requestKey)
 	headers.Add("Sec-Websocket-Version", strconv.Itoa(13))
 
-	readWriter.Write([]byte("GET ws://echo.websocket.org/?encoding=text HTTP/1.1\r\n"))
+	readWriter.Write([]byte("GET / HTTP/1.1\r\n"))
 	headers.Write(readWriter.Writer)
-	readWriter.Write([]byte("\r\n\r\n"))
-	readWriter.Flush()
+	readWriter.Write([]byte("\r\n"))
+	readWriter.Writer.Flush()
 
-	response, err := http.ReadResponse(readWriter.Reader, nil)
+	response, err := http.ReadResponse(readWriter.Reader, &http.Request{Method: "GET"})
 	if err != nil {
 		panic(err)
 	}
@@ -57,16 +58,16 @@ func main() {
 		panic(fmt.Sprintf("unexpected response code ", response.StatusCode))
 	}
 
-	if response.Header.Get("Upgrade") != "websocket" {
+	if strings.ToLower(response.Header.Get("Upgrade")) != "websocket" {
 		panic("No Upgrade: websocket header")
 	}
 
-	if response.Header.Get("Connection") != "Upgrade" {
+	if strings.ToLower(response.Header.Get("Connection")) != "upgrade" {
 		panic("No Upgrade: websocket header")
 	}
 
 	acceptKey := response.Header.Get("Sec-Websocket-Accept")
-	
+
 	checksum := sha1.Sum([]byte(requestKey + websocketGuid))
 	expectedKey := base64.StdEncoding.EncodeToString(checksum[:])
 
@@ -82,31 +83,40 @@ func main() {
 		panic("unexpected subprotocol")
 	}
 
-	fmt.Println("starting websocket")
-
 	frame := ws.NewTextFrame("Test message")
 	frame.Mask = true
-	
-	fmt.Println("writing frame", frame, string(frame.Payload))
-	
+
 	frameReadWriter := ws.NewFrameReadWriter(readWriter)
+
+	fmt.Println("sending frame", frame, string(frame.Payload))
 
 	err = frameReadWriter.WriteFrame(frame)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("after write", frame)
-	
 	frame, err = frameReadWriter.ReadFrame()
 	if err != nil {
 		panic(err)
 	}
 
-	if frame.Type == ws.CloseFrame {
-		fmt.Println(ws.ParseCloseFrame(frame))
-	}
-
 	fmt.Println("recevied frame", frame, string(frame.Payload))
 
+	frame = ws.NewCloseFrame(1001, "closing")
+	frame.Mask = true
+	err = frameReadWriter.WriteFrame(frame)
+	if err != nil {
+		panic(err)
+	}
+
+	frame, err = frameReadWriter.ReadFrame()
+	if err != nil {
+		panic(err)
+	}
+
+	if frame.Type != ws.CloseFrame {
+		panic("expected close frame")
+	}
+
+	fmt.Println(ws.ParseCloseFrame(frame))
 }

@@ -67,7 +67,7 @@ dispatchLoop:
 		select {
 		case frame, ws_ok := <-frameReaderChannel:
 			if !ws_ok {
-				frameWriterChannel<-newCloseFrame(1001, "")
+				frameWriterChannel<-NewCloseFrame(1001, "")
 				break dispatchLoop
 			}
 
@@ -94,7 +94,7 @@ dispatchLoop:
 
 		case frame, client_ok := <-clientChannel:
 			if !client_ok {
-				frameWriterChannel<-newCloseFrame(1001, "")
+				frameWriterChannel<-NewCloseFrame(1001, "")
 				break dispatchLoop
 			}
 
