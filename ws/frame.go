@@ -49,7 +49,7 @@ func NewBinaryFrame(b []byte) *Frame {
 	}
 }
 
-func NewCloseFrame(code uint16, message string)  *Frame {
+func newCloseFrame(code uint16, message string)  *Frame {
 	data := make([]byte, 2)
 	binary.BigEndian.PutUint16(data, code)
 	data = append(data, []byte(message)...)
@@ -78,39 +78,39 @@ func newPongFrame(data []byte) *Frame {
 }
 
 
-type FrameReader struct {
+type frameReader struct {
 	* bufio.Reader
 }
 
-type FrameWriter struct {
+type frameWriter struct {
 	* bufio.Writer
 }
 
-type FrameReadWriter struct {
-	* FrameReader
-	* FrameWriter
+type frameReadWriter struct {
+	* frameReader
+	* frameWriter
 }
 
-func NewFrameReader(reader * bufio.Reader) * FrameReader {
-	return &FrameReader{
+func newFrameReader(reader * bufio.Reader) * frameReader {
+	return &frameReader{
 		Reader: reader,
 	}
 }
 
-func NewFrameWriter(writer * bufio.Writer) * FrameWriter {
-	return &FrameWriter{
+func newframeWriter(writer * bufio.Writer) * frameWriter {
+	return &frameWriter{
 		Writer: writer,
 	}
 }
 
-func NewFrameReadWriter(readWriter * bufio.ReadWriter) * FrameReadWriter {
-	return &FrameReadWriter{
-		FrameReader: NewFrameReader(readWriter.Reader),
-		FrameWriter: NewFrameWriter(readWriter.Writer),
+func newFrameReadWriter(readWriter * bufio.ReadWriter) * frameReadWriter {
+	return &frameReadWriter{
+		frameReader: newFrameReader(readWriter.Reader),
+		frameWriter: newframeWriter(readWriter.Writer),
 	}
 }
 
-func (reader * FrameReader) ReadFrame() (*Frame, error) {
+func (reader * frameReader) ReadFrame() (*Frame, error) {
 
 	frame := &Frame{}
 
@@ -177,7 +177,7 @@ func (reader * FrameReader) ReadFrame() (*Frame, error) {
 	return frame, nil
 }
 
-func (writer * FrameWriter) WriteFrame(frame *Frame) error {
+func (writer * frameWriter) WriteFrame(frame *Frame) error {
 
 	var b byte
 

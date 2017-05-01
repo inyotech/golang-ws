@@ -34,7 +34,7 @@ func handlews1(ch chan *ws.Frame) {
 
 func handlews2(ch chan *ws.Frame) {
 
-	for i:=0;i<10;i++ {
+	for i:=0;i<3;i++ {
 		select {
 		case frame, ws_ok := <-ch:
 			if !ws_ok {
@@ -48,6 +48,7 @@ func handlews2(ch chan *ws.Frame) {
 			ch<-frame
 		}
 	}
+	fmt.Println("client closing channel")
 	close(ch)
 }
 
