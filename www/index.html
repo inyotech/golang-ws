@@ -1,33 +1,68 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>Test</title>
+    <title>Simple Websocket Client</title>
+    <script
+       src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+       integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g="
+       crossorigin="anonymous"></script>
+
+    <style>
+      .container {
+          position: relative;
+
+      }
+      .container h2 {
+          margin: 1em;
+      }
+      .messages {
+          float: left;
+          margin: 1em;
+          width: 20em;
+          height: 20em;
+          overflow-y: scroll;
+          border: 1px solid black;
+      }
+    </style>
   </head>
   <body>
-    <h1>It's working.</h1>
-    <ul id="messages">
-    </ul>
+    <div class="container">
+      <h2>Simple websocket client</h2>
+      <ul class="messages" id="sent-messages">
+      </ul>
+      <ul class="messages" id="received-messages">
+      </ul>
+    </div>
     <script>
-      var ws1 = new WebSocket("ws://localhost:8080/service1");
-      ws1.onopen = function(event) {
-          this.send("ws1 test message.");
-      };
-      ws1.onmessage = function(event) {
-          console.log(event.data)
-      };
-      ws1.onclose = function(event) {
-          console.log("ws1 closed")
+      var messageSender;
+
+      var ws = new WebSocket("ws://localhost:8080/service");
+
+      ws.onopen = function(event) {
+          console.log('starting message sender');
+          sendMessage(1);
       };
 
-      var ws2 = new WebSocket("ws://localhost:8080/service2");
-      ws2.onopen = function(event) {
-          this.send("ws2 test message.");
-      };
-      ws2.onmessage = function(event) {
+      ws.onmessage = function(event) {
+          var receivedMessages = $('#received-messages');
+          receivedMessages.append('<li>received: '+event.data+'</li>');
+          receivedMessages.scrollTop(receivedMessages[0].scrollHeight);
           console.log(event.data)
       };
-      ws2.onclose = function(event) {
-          console.log("ws2 closed");
+
+      ws.onclose = function(event) {
+          console.log("ws closed")
+          clearTimeout(messageSender);
+      };
+
+      function sendMessage(count) {
+          var message = 'test message ' + count;
+          ws.send(message);
+          var sentMessages = $('#sent-messages');
+          sentMessages.append('<li>sent: '+message+'</li>');
+          sentMessages.scrollTop(sentMessages[0].scrollHeight);
+          console.log(message);
+          messageSender = setTimeout(sendMessage.bind(null, ++count), 1000);
       }
 
 </script>
