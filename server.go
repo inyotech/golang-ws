@@ -23,7 +23,6 @@ func handlews(ch chan *ws.Frame) {
 		if !ws_ok {
 			return
 		}
-		frame.Payload = append([]byte("received: "), frame.Payload...)
 		ch<-frame
 	}
 }
@@ -32,6 +31,6 @@ func main() {
 
 	http.Handle("/service", ws.WsHandlerFunc(handlews))
 	http.HandleFunc("/", httpHandler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":9000", nil)
 
 }
