@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"log"
 	"flag"
 	"net/http"
 	"html/template"
@@ -12,9 +12,11 @@ import (
 
 func (options options) httpHandler(response http.ResponseWriter, request *http.Request) {
 
+	log.Printf("http request: %s from %s", request.RequestURI, request.RemoteAddr)
+
 	t, err := template.ParseFiles("template/index.html")
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	t.Execute(response, options)
@@ -22,7 +24,9 @@ func (options options) httpHandler(response http.ResponseWriter, request *http.R
 
 func (options options) wsHandler(ch chan *ws.Frame) {
 
-	fmt.Println(options)
+	defer close(ch)
+
+	log.Printf("handling websocket connection")
 
 	for {
 		frame, ws_ok := <-ch
@@ -31,6 +35,8 @@ func (options options) wsHandler(ch chan *ws.Frame) {
 		}
 		ch<-frame
 	}
+
+
 }
 
 
@@ -42,6 +48,11 @@ type options struct {
 
 func main() {
 
+
+	log.SetFlags(log.Ldate|log.Ltime|log.Lshortfile)
+
+	log.Printf("Starting %s", os.Args[0])
+
 	var options options
 
 	flag.StringVar(&options.WorkingDir, "WorkingDir", ".", "Working directory, file search path is relative to this (default '.')")
@@ -49,8 +60,6 @@ func main() {
 	flag.StringVar(&options.WsUrl, "WsUrl", "ws://localhost:9000/", "Web socket base url (default 'ws://localhost:9000/')")
 
 	flag.Parse()
-
-	fmt.Println(options)
 
 	err := os.Chdir(options.WorkingDir)
 	if err != nil {

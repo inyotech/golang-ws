@@ -2,6 +2,7 @@ package ws
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"strconv"
 	"bufio"
@@ -11,7 +12,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"math/rand"
-	"errors"
 )
 
 const websocketGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -20,28 +20,29 @@ func Dial(serverUrl string) (channel chan *Frame, err error) {
 
 	parsedUrl, err := url.Parse(serverUrl)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	if parsedUrl.Scheme != "ws" {
-		return nil, errors.New(fmt.Sprintf("Scheme %s not allowed", parsedUrl.Scheme))
+		err = fmt.Errorf("Scheme %s not allowed", parsedUrl.Scheme)
+		return
 	}
 
 	conn, err := net.Dial("tcp", parsedUrl.Host)
 	if err != nil {
-		return nil, err
+                return
 	}
 
 	frameReadWriter, err := setupClientConnection(conn)
 	if err != nil {
-		panic(err)
+		return
 	}
 
-	clientChannel := make(chan *Frame)
+	channel = make(chan *Frame)
 
-	go dispatchFrames(clientChannel, frameReadWriter, false)
+	go dispatchFrames(channel, frameReadWriter, false)
 
-	return clientChannel, nil
+	return
 }
 
 type WsHandlerFunc func(chan *Frame)
@@ -50,12 +51,14 @@ func (clientFunc WsHandlerFunc) ServeHTTP(responseWriter http.ResponseWriter, re
 
 	conn, responseReadWriter, err := responseWriter.(http.Hijacker).Hijack()
 	if err != nil {
-		panic(err)
+		log.Print(err)
+		return
 	}
 
 	frameReadWriter, err := setupServerConnection(responseReadWriter, request)
 	if err != nil {
-		panic(err)
+		log.Print(err)
+		return
 	}
 
 	defer conn.Close()
@@ -68,7 +71,7 @@ func (clientFunc WsHandlerFunc) ServeHTTP(responseWriter http.ResponseWriter, re
 
 }
 
-func setupClientConnection(conn net.Conn) (*frameReadWriter, error) {
+func setupClientConnection(conn net.Conn) (frameReadWriter *frameReadWriter, err error) {
 
 	readWriter := bufio.NewReadWriter(
 		bufio.NewReader(conn),
@@ -95,87 +98,103 @@ func setupClientConnection(conn net.Conn) (*frameReadWriter, error) {
 
 	response, err := http.ReadResponse(readWriter.Reader, &http.Request{Method: "GET"})
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	if response.StatusCode != 101 {
-		panic(fmt.Sprintf("unexpected response code ", response.StatusCode))
+		err = fmt.Errorf("Unexpected response code %d", response.StatusCode)
+		return
 	}
 
 	if strings.ToLower(response.Header.Get("Upgrade")) != "websocket" {
-		panic("No Upgrade: websocket header")
+		err = fmt.Errorf("No Upgrade: websocket header")
+		return
 	}
 
 	if strings.ToLower(response.Header.Get("Connection")) != "upgrade" {
-		panic("No Upgrade: websocket header")
+		err = fmt.Errorf("No Upgrade: websocket header")
+		return
 	}
 
 	acceptKey := response.Header.Get("Sec-Websocket-Accept")
 
 	expectedKey := generateAcceptKey(requestKey)
 	if acceptKey != expectedKey {
-		panic("request, accept key mismatch")
+		err = fmt.Errorf("request, accept key mismatch")
+		return
 	}
 
 	if response.Header.Get("Sec-Websocket-Extensions") != "" {
-		panic("unexpected extension(s)")
+		err = fmt.Errorf("unexpected extension(s)")
+		return
 	}
 
 	if response.Header.Get("Sec-Websocket-Protocol") != "" {
-		panic("unexpected subprotocol")
+		err = fmt.Errorf("unexpected subprotocol")
+		return
 	}
 
-	frameReadWriter := newFrameReadWriter(readWriter)
+	frameReadWriter = newFrameReadWriter(readWriter)
 
-	return frameReadWriter, nil
+	return
 }
 
-func setupServerConnection(responseReadWriter *bufio.ReadWriter, r *http.Request) (*frameReadWriter, error) {
+func setupServerConnection(responseReadWriter *bufio.ReadWriter, r *http.Request) (frameReadWriter *frameReadWriter, err error) {
 
 	if r.Method != "GET" {
-		return nil, errors.New("connection requires GET method")
+		fmt.Errorf("connection requires GET method")
+		return
 	}
 
 	if !r.ProtoAtLeast(1, 1) {
-		return nil, errors.New("connection requires at least HTTP/1.1")
+		err = fmt.Errorf("connection requires at least HTTP/1.1")
+		return
 	}
 
 	if strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
-		return nil, errors.New("No Upgrade: websocket header found")
+		err = fmt.Errorf("No Upgrade: websocket header found")
+		return
 	}
 
 	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" {
-		return nil, errors.New("No Connection: Upgrade header found")
+		err = fmt.Errorf("No Connection: Upgrade header found")
+		return
 	}
 
 	var websocketKey string
 	if websocketKey = r.Header.Get("Sec-Websocket-Key"); len(websocketKey) == 0 {
-		return nil, errors.New("No Sec-Websocket-Key found")
+		err = fmt.Errorf("No Sec-Websocket-Key found")
+		return
 	}
 
 	decodedKey, err := base64.StdEncoding.DecodeString(websocketKey)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Unable to base64 decode Sec-Websocket-Key %s", websocketKey))
+		err = fmt.Errorf("Unable to base64 decode Sec-Websocket-Key %s", websocketKey)
+		return
 	}
 
 	if len(decodedKey) != 16 {
-		return nil, errors.New(fmt.Sprintf("Invalid decoded Sec-Websocket-Key length %d", len(decodedKey)))
+		err = fmt.Errorf("Invalid decoded Sec-Websocket-Key length %d", len(decodedKey))
+		return
 	}
 
 	var websocketVersionString string
 	if websocketVersionString = r.Header.Get("Sec-Websocket-Version"); len(websocketVersionString) == 0 {
-		return nil, errors.New("No Sec-Websocket-Version found")
+		err = fmt.Errorf("No Sec-Websocket-Version found")
+		return
 	}
 
 	supportedWebsocketVersions := []int{13}
 
 	websocketVersion, err := strconv.Atoi(websocketVersionString)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to parse Sec-Websocket-Version value %s", websocketVersionString))
+		err = fmt.Errorf("Failed to parse Sec-Websocket-Version value %s", websocketVersionString)
+		return
 	}
 
 	if !intContainedInList(websocketVersion, supportedWebsocketVersions) {
-		return nil, errors.New(fmt.Sprintf("Unsupported websocket version %d", websocketVersion))
+		err = fmt.Errorf("Unsupported websocket version %d", websocketVersion)
+		return
 	}
 
 	acceptHeaders := http.Header{}
@@ -196,14 +215,14 @@ func setupServerConnection(responseReadWriter *bufio.ReadWriter, r *http.Request
 
 	err = response.Write(responseReadWriter)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	responseReadWriter.Writer.Flush()
 
-	frameReadWriter := newFrameReadWriter(responseReadWriter)
+	frameReadWriter = newFrameReadWriter(responseReadWriter)
 
-	return frameReadWriter, nil
+	return
 
 }
 
@@ -254,7 +273,7 @@ dispatchLoop:
 			case PongFrame:
 
 			default:
-				fmt.Println("unhandled frame type", frame.Type)
+				log.Printf("unhandled frame type", frame.Type)
 			}
 
 		case frame, client_ok := <-clientChannel:

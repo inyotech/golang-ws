@@ -1,7 +1,7 @@
 package ws
 
 import (
-	"fmt"
+	"log"
 	"io"
 	"bufio"
 	"math/rand"
@@ -222,7 +222,7 @@ func (writer * frameWriter) WriteFrame(frame *Frame) error {
 		}
 
 	default:
-		panic(errors.New(fmt.Sprintf("frame length %d too large", payloadLength)))
+		log.Panicf("frame length %d too large", payloadLength)
 	}
 
 	if frame.Mask {
