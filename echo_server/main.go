@@ -3,12 +3,12 @@ package main
 import (
 	"net/http"
 	"html/template"
-	"github.com/inyotech/golang-ws/ws"
 
+	"github.com/inyotech/golang-ws/ws"
 )
 
 func httpHandler(response http.ResponseWriter, request *http.Request) {
-	t, err := template.ParseFiles("www/index.html")
+	t, err := template.ParseFiles("template/index.html")
 	if err != nil {
 		panic(err)
 	}
@@ -31,6 +31,6 @@ func main() {
 
 	http.Handle("/service", ws.WsHandlerFunc(handlews))
 	http.HandleFunc("/", httpHandler)
-	http.ListenAndServe(":9000", nil)
+	http.ListenAndServe(":8080", nil)
 
 }
