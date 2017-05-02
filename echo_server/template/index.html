@@ -45,16 +45,15 @@
 	  <p>
 	  Simple demonstration of a web browser client communicating
 	  with a <a href="https://golang.org">Golang</a> websocket
-	  server.  The client connection uses the browser's built-in
+	  server.  The client connects using the browser's built-in
 	  Websocket Javascript interface. After a successfully
-	  establishing a connectiona, messages are sent across the
-	  link at a regular interval.  The Golang server receives the
-	  messages and immediately retransmits them back.  Messages
-	  sent from the client to server are displayed below in the
-	  left panel.  The right panel displays messages as they are
-	  received from the server along with the rount-trip time in
-	  seconds.
-	  also.
+	  establishing the connection, the client sends messages
+	  across the link at a regular interval.  The Golang server
+	  receives the messages and immediately retransmits them back.
+	  Messages sent from the client to server are displayed below
+	  in the left panel.  The right panel displays messages as
+	  they are received from the server along with the rount-trip
+	  time in seconds.
 	  </p>
 	  <p>Complete source available on <a href="http://github.com/inyotech/golang-ws">Github</a>.</p>
 	</div>
