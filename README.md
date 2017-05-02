@@ -1,14 +1,14 @@
-## Web Socket Library
+# Web Socket Library
 
-# Echo Client
+## Echo Client
 
-# Echo Server
+## Echo Server
 
-# Installation
+## Installation
 
-# Quick Start
+## Quick Start
 
-# Apache Web Proxy
+## Apache Web Proxy
 
-# Systemd daemonization
+## Systemd daemonization
 

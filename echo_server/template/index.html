@@ -6,12 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-    <!--link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"-->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js" integrity="sha256-1hjUhpc44NwiNg8OwMu2QzJXhD8kcj+sJA3aCQZoUjg=" crossorigin="anonymous"></script>
+    <!--link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
 
     <style>
       .buttons {
@@ -23,30 +23,132 @@
       .messages {
           height: 25em;
           overflow-y: scroll;
-          border: 1px solid black;
       }
       ul.messages {
-          padding: .5em;
+          padding: 0em;
           list-style: none;
+      }
+      .message-panel {
+          box-shadow: 5px 5px 15px #777777;
+      }
+      footer {
+          text-align: center;
+          margin: 2em;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h2>Golang websocket echo demo</h2>
+      <h2>Golang Websocket Demonstration</h2>
+      <div class="panel panel-default">
+	<div class="panel-body">
+	  <p>
+	  Simple demonstration of a web browser client communicating
+	  with a <a href="https://golang.org">Golang</a> websocket
+	  server.  The client connection uses the browser's built-in
+	  Websocket Javascript interface. After a successfully
+	  establishing a connectiona, messages are sent across the
+	  link at a regular interval.  The Golang server receives the
+	  messages and immediately retransmits them back.  Messages
+	  sent from the client to server are displayed below in the
+	  left panel.  The right panel displays messages as they are
+	  received from the server along with the rount-trip time in
+	  seconds.
+	  also.
+	  </p>
+	  <p>Complete source available on <a href="http://github.com/inyotech/golang-ws">Github</a>.</p>
+	</div>
+      </div>
       <div class="buttons">
-        <button type="button" class="btn btn-primary" id="start-messages">Start messages</button>
-        <button type="button" class="btn btn-primary" id="stop-messages">Stop messages</button>
+        <button type="button" class="btn btn-default" id="start-messages">Start messages</button>
+        <button type="button" class="btn btn-default" id="stop-messages">Stop messages</button>
       </div>
       <div class="row">
         <div class="col-sm-6">
-          <ul class="messages" id="sent-messages"></ul>
+	  <div class="panel panel-default message-panel">
+	    <div class="panel-heading">Sent Messages</div>
+	    <div class="panel-body">
+              <ul class="messages" id="sent-messages"></ul>
+	    </div>
+	  </div>
         </div>
         <div class="col-sm-6">
-          <ul class="messages" id="received-messages"></ul>
+	  <div class="panel panel-default message-panel">
+	    <div class="panel-heading">Received Messages</div>
+	    <div class="panel-body">
+              <ul class="messages" id="received-messages"></ul>
+	    </div>
+	  </div>
         </div>
       </div>
-      <a href="http://github.com/inyotech/golang-ws">golang-ws</a>
+      <div class="row">
+	<div class="col-sm-12">
+	  Javascript in the client:
+	  <pre>
+	  &lt;script&gt;
+	    var ws = new WebSocket("ws://golang-ws.inyotech.com/echo_service");
+
+	    ws.onopen = function() {
+		sendMessage();
+	    };
+
+	    ws.onmessage = function(event) {
+		var message = JSON.parse(event.data);
+		...
+	    };
+
+	    function sendMessage() {
+		...
+		var message = {
+		    timestamp: now,
+		    data: "test message"
+		};
+		...
+		ws.send(JSON.stringify(message);
+		setTimeout(sendMessage, 1000);
+	    }
+	  &lt;/script&gt;
+	  </pre>
+	</div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+	  Golang on the server:
+	  <pre>
+          package main
+
+          import (
+                  "net/http"
+                  "github.com/inyotech/golang-ws/ws"
+          )
+
+          func wsHandler(ch chan *ws.Frame) {
+
+		  defer close(ch)
+
+		  for {
+			  frame, ws_ok := <-ch
+				  if !ws_ok {
+					  return
+				  }
+				  ch<-frame
+			  }
+		  }
+          }
+
+          func main() {
+                  ...
+                  http.Handle("/echo_service", ws.WsHandlerFunc(options.wsHandler))
+
+                  http.ListenAndServe(":80", nil)
+
+          }
+	  </pre>
+	</div>
+      </div>
+      <footer>
+	&copy; Copyright 2017 Inyo Technical Services
+      </footer>
     </div>
     <script>
       var counter = 0;
