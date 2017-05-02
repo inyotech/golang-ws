@@ -14,6 +14,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js" integrity="sha256-1hjUhpc44NwiNg8OwMu2QzJXhD8kcj+sJA3aCQZoUjg=" crossorigin="anonymous"></script>
 
     <style>
+      .buttons {
+          margin: 1em;
+      }
+      .buttons button {
+          margin: 0 .5em 0 .5em;
+      }
       .messages {
           height: 25em;
           overflow-y: scroll;
@@ -28,6 +34,10 @@
   <body>
     <div class="container">
       <h2>Golang websocket server demo</h2>
+      <div class="buttons">
+        <button id="start-messages">Start messages</button>
+        <button id="stop-messages">Stop messages</button>
+      </div>
       <div class="row">
         <div class="col-sm-6">
           <ul class="messages" id="sent-messages"></ul>
@@ -36,15 +46,17 @@
           <ul class="messages" id="received-messages"></ul>
         </div>
       </div>
+      <a href="http://github.com/inyotech/golang-ws">golang-ws</a>
     </div>
     <script>
+      var counter = 0;
       var messageSender;
 
       var ws = new WebSocket("ws://golang-ws.inyotech.com/service");
 
       ws.onopen = function(event) {
           console.log('starting message sender');
-          sendMessage(1);
+          startMessages();
       };
 
       ws.onmessage = function(event) {
@@ -53,31 +65,53 @@
           var sendTime = moment(message.timestamp);
           var roundTripTime = now.diff(sendTime);
           var receivedMessages = $('#received-messages');
-          receivedMessages.append('<li>received: '+message.data+' time: '+roundTripTime/1000+'sec</li>');
+          receivedMessages.append('<li>'+now.format('hh:mm:ss.SSS')+' received: '+message.data+' round trip: '+roundTripTime/1000+' sec</li>');
           receivedMessages.scrollTop(receivedMessages[0].scrollHeight);
           console.log(message)
       };
 
       ws.onclose = function(event) {
           console.log("ws closed")
-          clearTimeout(messageSender);
+          stopMessages();
       };
 
-      function sendMessage(count) {
+      function startMessages() {
+
+          $('#start-messages').prop('disabled', true);
+          $('#stop-messages').prop('disabled', false);
+          sendMessage();
+      }
+
+      function stopMessages() {
+          $('#stop-messages').prop('disabled', true);
+          $('#start-messages').prop('disabled', false);
+          clearTimeout(messageSender);
+      }
+
+      function sendMessage() {
           var now = moment()
           var message = {
               timestamp: now,
-              data: 'test message '+count
+              data: 'test message '+(++counter)
           }
           var m = JSON.stringify(message);
           ws.send(m);
           var sentMessages = $('#sent-messages');
-          sentMessages.append('<li>sent: '+message.data+'</li>');
+          sentMessages.append('<li>'+now.format('hh:mm:ss.SSS')+' sent: '+message.data+'</li>');
           sentMessages.scrollTop(sentMessages[0].scrollHeight);
           console.log(message);
-          messageSender = setTimeout(sendMessage.bind(null, ++count), 1000);
+          messageSender = setTimeout(sendMessage, 1000);
       }
 
-</script>
+      $('#start-messages').on('click', function(b) {
+          startMessages()
+      });
+
+      $('#stop-messages').on('click', function(b) {
+          stopMessages();
+      });
+
+
+  </script>
   </body>
 </html>
