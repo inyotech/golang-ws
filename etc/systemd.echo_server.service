@@ -1,0 +1,15 @@
+[Unit]
+Description=Web socket server daemon
+Documentation=http://github.com/inyotech/golang-ws
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/go/src/github.com/inyotech/golang-ws/echo_server
+ExecStart=/usr/local/go/src/github.com/inyotech/golang-ws/echo_server/echo_server \
+    --BindAddr=0.0.0.0:9000 \
+    --WsUrl ws://localhost:9000/
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

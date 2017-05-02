@@ -68,6 +68,9 @@ func main() {
 
 	http.Handle("/echo_service", ws.WsHandlerFunc(options.wsHandler))
 	http.HandleFunc("/", options.httpHandler)
-	http.ListenAndServe(options.BindAddr, nil)
+	err = http.ListenAndServe(options.BindAddr, nil)
+	if err != nil {
+		log.Print(err)
+	}
 
 }
