@@ -1,2 +1,2 @@
-client
-server
+echo_client/echo_client
+echo_server/echo_server
