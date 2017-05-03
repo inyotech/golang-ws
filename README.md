@@ -23,22 +23,52 @@ $ echo $GOPATH
 /home/ubuntu/go
 ```
 
+Depending on your specific set up the output of the above commands may
+vary.  For help with install and setup of the language compiler or
+tools visit [this link](https://golang.org/doc/install).
+
+2. Download, build and install this package with a single `go get` command.
+
+```
+$ go get github.com/inyotech/golang-ws/...
+```
+
+Assuming the above build steps were executed correctly, both 
+echo_client and echo_server executable images will be installed under
+`$GOPATH/bin`.
+
 ## Echo Client
 
-Command line client demonstration that accepts websocket url and message
-arguments.  It will attempt to open a websocket connection to the
-endpoint in the given url.  On success it will send the message
+A command line client demonstration that accepts websocket url and
+message arguments.  It will attempt to open a websocket connection to
+the endpoint in the given url.  On success it will send the message
 through the connection then wait for a response.
 
 ```
-echo_client$ ./echo_client --url ws://echo.websocket.org --message "websocket client demonstration"
-2017/05/03 17:36:33.428695 sending: websocket client demonstration
-2017/05/03 17:36:33.518832 received: websocket client demonstration
+$ $GOPATH/bin/echo_client --url ws://echo.websocket.org --message "websocket demonstration"
+2017/05/03 17:56:44.530881 sending: websocket demonstration
+2017/05/03 17:56:44.622566 received: websocket demonstration
 
 ```
 
 ## Echo Server
 
+A more complex but still relatively simple websocket server
+demonstration.  This executable image will listen for http requests
+and response with a simple page that opens a web socket connection
+back to itself.  Once the connection is open the client will begin to
+continually send text messages through the websocket connection and
+wait for the responses.  The client will display both the sent and
+received messages along with timestamps.
+
+`go get` will install the echo_server image under `$GOPATH/bin` and
+the location of the required html template file will need to be
+provided on the command line. By default the server will listen for
+http requests at http://localhost:9000.
+
+```
+$ $GOPATH/bin/echo_server --WorkingDir=$GOPATH/src/github.com/inyotech/golang-ws/echo_server
+```
 
 ## Quick Start
 
