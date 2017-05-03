@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>Golang Websocket</title>
+    <title>Golang WebSocket</title>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,6 +14,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
 
     <style>
+      body {
+          background-color: #eee;
+      }
       .buttons {
           margin: 1em 0 1em 0;
       }
@@ -31,7 +34,12 @@
       .message-panel {
           box-shadow: 5px 5px 15px #777777;
       }
+      .panel pre {
+          background-color: white;
+	  border: none;
+      }
       footer {
+          font-size: smaller;
           text-align: center;
           margin: 2em;
       }
@@ -39,21 +47,21 @@
   </head>
   <body>
     <div class="container">
-      <h2>Golang Websocket Demonstration</h2>
+      <h2>Golang WebSocket Demonstration</h2>
       <div class="panel panel-default">
 	<div class="panel-body">
 	  <p>
 	  Simple demonstration of a web browser client communicating
 	  with a <a href="https://golang.org">Golang</a> websocket
 	  server.  The client connects using the browser's built-in
-	  Websocket Javascript interface. After a successfully
-	  establishing the connection, the client sends messages
-	  across the link at a regular interval.  The Golang server
-	  receives the messages and immediately retransmits them back.
-	  Messages sent from the client to server are displayed below
-	  in the left panel.  The right panel displays messages as
-	  they are received from the server along with the round-trip
-	  time in seconds.
+	  <a href="https://en.wikipedia.org/wiki/WebSocket">Websocket</a>
+	  Javascript interface. After a successfully establishing the
+	  connection, the client sends messages across the link at a
+	  regular interval.  The Golang server receives the messages
+	  and immediately retransmits them back.  Messages sent from
+	  the client to server are displayed below in the left panel.
+	  The right panel displays messages as they are received from
+	  the server along with the round-trip time in seconds.
 	  </p>
 	  <p>Complete source available on <a href="http://github.com/inyotech/golang-ws">Github</a>.</p>
 	</div>
@@ -82,67 +90,79 @@
       </div>
       <div class="row">
 	<div class="col-sm-12">
-	  Javascript in the client:
-	  <pre>
-	  &lt;script&gt;
-	    var ws = new WebSocket("ws://golang-ws.inyotech.com/echo_service");
+	  <div class="panel panel-default">
+	    <div class="panel-heading">
+	      Javascript in the client
+	    </div>
+	    <div class="panel-body">
+	      <pre>
+	      &lt;script&gt;
+		var ws = new WebSocket("ws://golang-ws.inyotech.com/echo_service");
 
-	    ws.onopen = function() {
-		sendMessage();
-	    };
-
-	    ws.onmessage = function(event) {
-		var message = JSON.parse(event.data);
-		...
-	    };
-
-	    function sendMessage() {
-		...
-		var message = {
-		    timestamp: now,
-		    data: "test message"
+		ws.onopen = function() {
+		    sendMessage();
 		};
-		...
-		ws.send(JSON.stringify(message);
-		setTimeout(sendMessage, 1000);
-	    }
-	  &lt;/script&gt;
-	  </pre>
+
+		ws.onmessage = function(event) {
+		    var message = JSON.parse(event.data);
+		    ...
+		};
+
+		function sendMessage() {
+		    ...
+		    var message = {
+			timestamp: now,
+			data: "test message"
+		    };
+		    ...
+		    ws.send(JSON.stringify(message);
+		    setTimeout(sendMessage, 1000);
+		}
+	      &lt;/script&gt;
+	      </pre>
+            </div>
+	  </div>
 	</div>
       </div>
       <div class="row">
         <div class="col-sm-12">
-	  Golang on the server:
-	  <pre>
-          package main
+	  <div class="panel panel-default">
+	    <div class="panel-heading">
+	      Golang on the server:
+	    </div>
+	    <div class="panel-body">
+              <pre>
+              package main
 
-          import (
-                  "net/http"
-                  "github.com/inyotech/golang-ws/ws"
-          )
+              import (
+                      "net/http"
+                      "github.com/inyotech/golang-ws/ws"
+              )
 
-          func wsHandler(ch chan *ws.Frame) {
+              func wsHandler(ch chan *ws.Frame) {
 
-		  defer close(ch)
+                      defer close(ch)
 
-		  for {
-			  frame, ws_ok := <-ch
-				  if !ws_ok {
-					  return
-				  }
-				  ch<-frame
-			  }
-		  }
-          }
+                      for {
+                              frame, ws_ok := <-ch
+                                      if !ws_ok {
+                                              return
+                                      }
+                                      ch<-frame
+                              }
+                      }
+              }
 
-          func main() {
-                  ...
-                  http.Handle("/echo_service", ws.WsHandlerFunc(options.wsHandler))
+              func main() {
+                      ...
+                      http.Handle("/echo_service", ws.WsHandlerFunc(options.wsHandler))
 
-                  http.ListenAndServe(":80", nil)
+                      http.ListenAndServe(":80", nil)
 
-          }
-	  </pre>
+              }
+	      </pre>
+            </div>
+	  </div>
 	</div>
       </div>
       <footer>
@@ -166,7 +186,7 @@
           var sendTime = moment(message.timestamp);
           var roundTripTime = now.diff(sendTime);
           var receivedMessages = $('#received-messages');
-          receivedMessages.append('<li>'+now.format('hh:mm:ss.SSS')+' received: '+message.data+' round trip: '+roundTripTime/1000+' sec</li>');
+          receivedMessages.append('<li>'+now.format('hh:mm:ss.SSS')+' received: '+message.data+' round trip: '+(roundTripTime/1000).toFixed(3)+' sec</li>');
           receivedMessages.scrollTop(receivedMessages[0].scrollHeight);
           console.log(message)
       };

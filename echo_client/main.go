@@ -1,13 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"flag"
 
 	"github.com/inyotech/golang-ws/ws"
 )
 
 func main() {
+
+	log.SetFlags(log.Ldate|log.Ltime|log.Lmicroseconds)
 
 	url := flag.String("url", "ws://echo.websocket.org/", "Web socket url (default 'ws://echo.websocket.org/')")
 	message := flag.String("message", "Test message", "Message to send (default 'Test message')")
@@ -21,13 +23,13 @@ func main() {
 
 	frame := ws.NewTextFrame(*message)
 
-	fmt.Println("sending message: ", string(frame.Payload))
+	log.Printf("sending: %s", string(frame.Payload))
 
 	channel <-frame
 
 	frame = <-channel
 
-	fmt.Println("recevied message: ", string(frame.Payload))
+	log.Printf("received: %s", string(frame.Payload))
 
 	close(channel)
 }
