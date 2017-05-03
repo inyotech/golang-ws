@@ -1,4 +1,4 @@
-# Web Socket Library
+# Golang WebSocket Library
 
 Basic implementation of a substatial portion of the WebSocket Protocol as specified in IETF RFC 6455.  Specific requirements not implemented here include
 
@@ -69,9 +69,6 @@ http requests at http://localhost:9000.
 ```
 $ $GOPATH/bin/echo_server --WorkingDir=$GOPATH/src/github.com/inyotech/golang-ws/echo_server
 2017/05/03 18:32:34 main.go:54: Starting /home/ubuntu/go/bin/echo_server
+...
 ```
-
-## Running the echo server under behind an Apache proxy
-
-## Running the echo server as a daemon under Systemd
 
