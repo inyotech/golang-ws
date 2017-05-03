@@ -11,6 +11,8 @@ Basic implementation of a substatial portion of the WebSocket Protocol as specif
 * Extensions; Neither the client nor server support any protocol
   extensions.
 
+An online demonstration of an echo service is hosted at [http://golang-ws.inyotech.com](http://golang-ws.inyotech.com).
+
 ## Building
 
 1. Make sure the go language compiler and build tools are installed on
