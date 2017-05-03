@@ -2,26 +2,32 @@ package main
 
 import (
 	"fmt"
+	"flag"
 
 	"github.com/inyotech/golang-ws/ws"
 )
 
 func main() {
 
-	channel, err := ws.Dial("ws://echo.websocket.org:80")
+	url := flag.String("url", "ws://echo.websocket.org/", "Web socket url (default 'ws://echo.websocket.org/')")
+	message := flag.String("message", "Test message", "Message to send (default 'Test message')")
+
+	flag.Parse()
+
+	channel, err := ws.Dial(*url, "")
 	if err != nil {
 		panic(err)
 	}
 
-	frame := ws.NewTextFrame("Test message")
+	frame := ws.NewTextFrame(*message)
 
-	fmt.Println("sending frame", frame, string(frame.Payload))
+	fmt.Println("sending message: ", string(frame.Payload))
 
 	channel <-frame
 
 	frame = <-channel
 
-	fmt.Println("recevied frame", frame, string(frame.Payload))
+	fmt.Println("recevied message: ", string(frame.Payload))
 
 	close(channel)
 }

@@ -16,7 +16,7 @@ import (
 
 const websocketGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
-func Dial(serverUrl string) (channel chan *Frame, err error) {
+func Dial(serverUrl string, origin string) (channel chan *Frame, err error) {
 
 	parsedUrl, err := url.Parse(serverUrl)
 	if err != nil {
@@ -28,12 +28,16 @@ func Dial(serverUrl string) (channel chan *Frame, err error) {
 		return
 	}
 
+	if len(parsedUrl.Port()) == 0 {
+		parsedUrl.Host += ":80"
+	}
+
 	conn, err := net.Dial("tcp", parsedUrl.Host)
 	if err != nil {
                 return
 	}
 
-	frameReadWriter, err := setupClientConnection(conn)
+	frameReadWriter, err := setupClientConnection(conn, parsedUrl, origin)
 	if err != nil {
 		return
 	}
@@ -71,7 +75,7 @@ func (clientFunc WsHandlerFunc) ServeHTTP(responseWriter http.ResponseWriter, re
 
 }
 
-func setupClientConnection(conn net.Conn) (frameReadWriter *frameReadWriter, err error) {
+func setupClientConnection(conn net.Conn, url *url.URL, origin string) (frameReadWriter *frameReadWriter, err error) {
 
 	readWriter := bufio.NewReadWriter(
 		bufio.NewReader(conn),
@@ -79,10 +83,12 @@ func setupClientConnection(conn net.Conn) (frameReadWriter *frameReadWriter, err
 	)
 
 	headers := http.Header{}
-	headers.Add("Host", "echo.websocket.org")
+	headers.Add("Host", url.Host)
 	headers.Add("Upgrade", "websocket")
 	headers.Add("Connection", "Upgrade")
-	headers.Add("Origin", "http://localhost")
+	if len(origin) != 0 {
+		headers.Add("Origin", origin)
+	}
 
 	data := make([]byte, 16)
 	rand.Read(data)
@@ -91,7 +97,7 @@ func setupClientConnection(conn net.Conn) (frameReadWriter *frameReadWriter, err
 	headers.Add("Sec-Websocket-Key", requestKey)
 	headers.Add("Sec-Websocket-Version", strconv.Itoa(13))
 
-	readWriter.Write([]byte("GET / HTTP/1.1\r\n"))
+	readWriter.Write([]byte("GET "+url.RequestURI()+" HTTP/1.1\r\n"))
 	headers.Write(readWriter.Writer)
 	readWriter.Write([]byte("\r\n"))
 	readWriter.Writer.Flush()
