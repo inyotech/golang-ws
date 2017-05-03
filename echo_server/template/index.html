@@ -173,7 +173,7 @@
       var counter = 0;
       var messageSender;
 
-      var ws = new WebSocket("{{.WsUrl}}echo_service");
+      var ws = new WebSocket("{{.WebSocketUrl}}");
 
       ws.onopen = function(event) {
           console.log('starting message sender');

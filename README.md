@@ -68,11 +68,10 @@ http requests at http://localhost:9000.
 
 ```
 $ $GOPATH/bin/echo_server --WorkingDir=$GOPATH/src/github.com/inyotech/golang-ws/echo_server
+2017/05/03 18:32:34 main.go:54: Starting /home/ubuntu/go/bin/echo_server
 ```
 
-## Quick Start
+## Running the echo server under behind an Apache proxy
 
-## Apache Web Proxy
-
-## Systemd daemonization
+## Running the echo server as a daemon under Systemd
 

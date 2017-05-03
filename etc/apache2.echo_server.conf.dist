@@ -3,16 +3,13 @@
     ServerName echo-server.localhost
     ServerAdmin admin@localhost
 
-    ProxyPass / http://localhost:9000/
-    ProxyPassReverse / http://localhost:9000/
-
     RewriteEngine on
     RewriteCond %{HTTP:UPGRADE} ^WebSocket$ [NC]
     RewriteCond %{HTTP:CONNECTION} Upgrade$ [NC]
     RewriteRule .* ws://localhost:9000%{REQUEST_URI} [P]
 
-    ProxyPass /service/ http://localhost:9000/service/
-    ProxyPassReverse /service/ http://localhost:9000/service/
+    ProxyPass / http://localhost:9000/
+    ProxyPassReverse / http://localhost:9000/
 
     LogLevel warn
 
