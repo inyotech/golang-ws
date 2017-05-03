@@ -7,8 +7,7 @@ After=network.target
 Type=simple
 WorkingDirectory=/usr/local/go/src/github.com/inyotech/golang-ws/echo_server
 ExecStart=/usr/local/go/src/github.com/inyotech/golang-ws/echo_server/echo_server \
-    --BindAddr=0.0.0.0:9000 \
-    --WsUrl ws://localhost:9000/
+    --BindAddr=0.0.0.0:9000
 Restart=on-abort
 
 [Install]
