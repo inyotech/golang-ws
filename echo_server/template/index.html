@@ -155,7 +155,7 @@
 
               func main() {
                       ...
-                      http.Handle("/echo_service", ws.WsHandlerFunc(options.wsHandler))
+                      http.Handle("/echo_service", ws.WsHandlerFunc(wsHandler))
 
                       http.ListenAndServe(":80", nil)
 
